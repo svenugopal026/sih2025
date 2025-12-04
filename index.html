@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Chat Bot</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 80vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #667eea;
+            color: white;
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .questions-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .question-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .question-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .question-item.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .question-item h4 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        .question-item .category {
+            color: #667eea;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bot-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .bot-info h3 {
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .bot-info .status {
+            color: #28a745;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: #fafbfc;
+        }
+
+        .message {
+            margin-bottom: 25px;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.bot {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            max-width: 70%;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 40vh;
+            }
+
+            .questions-list {
+                padding: 15px;
+            }
+
+            .main-chat {
+                height: 60vh;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-robot"></i> SIH-2025 @ Vardhaman</h2>
+                <p>Vardhaman College of Engineering, Hyderabad</p>
+            </div>
+            <div class="questions-list" id="questionsList">
+                <!-- Questions will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="main-chat">
+            <div class="chat-header">
+                <div class="bot-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="bot-info">
+                    <h3>SIH-2925 @ Vardhaman AI Assistant</h3>
+                    <div class="status">
+                        <i class="fas fa-circle"></i>
+                        Online
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h3>Welcome to Chat Bot</h3>
+                    <p>Select a question from the sidebar to start a conversation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chat bot data
+        const chatData = [
+            {
+                id: 1,
+                category: "SPOC for SIH-2025 @ Vardhaman College of Engineering",
+                question: "SPOC for SIH-2025 @ Vardhaman College of Engineering",
+                answer: "Dr J Krishna Chaitanya, Dept. of ECE."
+            },
+            {
+                id: 2,
+                category: "Registration & Help Desk",
+                question: "Contacts for Registration & Help Desk",
+                answer: "Dr S Venu Gopal (9441030645), Dr M Srilaha(8125642645),  dr. K Narsimha  Reddy(9032180918)"
+            },
+            {
+                id: 3,
+                category: "Accommodation",
+                question: "Contacts",
+                answer: "Prof. Vivek Kulkarni (9866758870), Dr P. venkateshwar  Reddy(9959095853), Mr Varma (8143275536)"
+            },
+            {
+                id: 4,
+                category: "Transportation",
+                question: "Contacts for Transportation",
+                answer: "Mr D Manoj Reddy (9640689764)"
+            },
+            {
+                id: 5,
+                category: "Science",
+                question: "How do computers process information?",
+                answer: "Computers process information using binary code (0s and 1s) through their central processing unit (CPU). They follow instructions stored in memory, perform calculations, and manipulate data to produce desired outputs."
+            },
+            {
+                id: 6,
+                category: "General",
+                question: "Can you help with homework?",
+                answer: "Yes, I can help with homework by explaining concepts, providing examples, and guiding you through problem-solving approaches. However, I encourage you to understand the material rather than just getting answers."
+            },
+            {
+                id: 7,
+                category: "Technology",
+                question: "What is cloud computing?",
+                answer: "Cloud computing is the delivery of computing services over the internet. Instead of owning their own computing infrastructure, companies can rent access to services like storage, processing power, and databases from cloud providers."
+            },
+            {
+                id: 8,
+                category: "Science",
+                question: "How does the internet work?",
+                answer: "The internet works through a global network of interconnected computers that communicate using standardized protocols. Data is broken into packets, routed through various networks, and reassembled at the destination using IP addresses and DNS systems."
+            }
+        ];
+
+        let currentQuestionId = null;
+
+        // Initialize the chat bot
+        function initChatBot() {
+            renderQuestionsList();
+        }
+
+        // Render questions list in sidebar
+        function renderQuestionsList() {
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = '';
+
+            chatData.forEach(item => {
+                const questionElement = document.createElement('div');
+                questionElement.className = `question-item ${currentQuestionId === item.id ? 'active' : ''}`;
+                questionElement.onclick = () => selectQuestion(item.id);
+                
+                questionElement.innerHTML = `
+                    <div class="category">${item.category}</div>
+                    <h4>${item.question}</h4>
+                `;
+                
+                questionsList.appendChild(questionElement);
+            });
+        }
+
+        // Select and display a question
+        function selectQuestion(questionId) {
+            currentQuestionId = questionId;
+            const questionData = chatData.find(item => item.id === questionId);
+            
+            if (questionData) {
+                displayQuestionAndAnswer(questionData);
+                updateActiveQuestion(questionId);
+            }
+        }
+
+        // Update active question styling
+        function updateActiveQuestion(questionId) {
+            const questionItems = document.querySelectorAll('.question-item');
+            questionItems.forEach((item, index) => {
+                if (chatData[index].id === questionId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        // Display question and answer in chat
+        function displayQuestionAndAnswer(questionData) {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Clear previous messages
+            chatMessages.innerHTML = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Simulate typing delay and then show messages
+            setTimeout(() => {
+                hideTypingIndicator();
+                
+                // Add user message
+                const userMessage = createMessage('user', questionData.question);
+                chatMessages.appendChild(userMessage);
+                
+                // Add bot message with delay
+                setTimeout(() => {
+                    showTypingIndicator();
+                    setTimeout(() => {
+                        hideTypingIndicator();
+                        const botMessage = createMessage('bot', questionData.answer);
+                        chatMessages.appendChild(botMessage);
+                        scrollToBottom();
+                    }, 1000);
+                }, 500);
+                
+                scrollToBottom();
+            }, 1000);
+        }
+
+        // Create a message element
+        function createMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${content}
+                </div>
+                <div class="message-time">${currentTime}</div>
+            `;
+            
+            return messageDiv;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const chatMessages = document.getElementById('chatMessages');
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'message bot';
+            typingIndicator.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            typingIndicator.id = 'typingIndicator';
+            chatMessages.appendChild(typingIndicator);
+            scrollToBottom();
+        }
+
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Scroll to bottom of chat messages
+        function scrollToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Initialize the chat bot when page loads
+        document.addEventListener('DOMContentLoaded', initChatBot);
+    </script>
+</body>
+</html>
